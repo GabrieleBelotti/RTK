@@ -127,7 +127,7 @@ if (RTK_USE_CUDA)
     rtkCudaWarpImageFilter.cxx
     ${RTK_CUDA_WRAPPERS}
     ${RTK_CUDA_FILES})
-endif ()
+endif()
 #=========================================================
 
 itk_module_add_library(RTK ${RTK_SRCS})

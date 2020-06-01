@@ -5,11 +5,18 @@ set(DOCUMENTATION "")
 set(RTK_IO_DEPENDS
   ITKIOCSV
   ITKIOGDCM
+  ITKGDCM
   ITKIOMeta
   ITKIORAW
   ITKIOTIFF
   ITKIOXML
   )
+
+if(ITK_WRAP_PYTHON)
+  set(RTK_BRIDGE_DEPENDS
+  ITKBridgeNumPy
+  )
+endif()
 
 set(RTK_DEPENDS
   ITKCommon
@@ -20,6 +27,7 @@ set(RTK_DEPENDS
   ITKSmoothing
   ITKImageNoise
   ${RTK_IO_DEPENDS}
+  ${RTK_BRIDGE_DEPENDS}
   )
 
 # -----------------------------------------
@@ -45,6 +53,15 @@ itk_module(RTK
     ${RTK_DEPENDS}
   TEST_DEPENDS
     ${RTK_TEST_DEPENDS}
+  FACTORY_NAMES
+    ImageIO::DCMImagX
+    ImageIO::His
+    ImageIO::Hnc
+    ImageIO::Hnd
+    ImageIO::ImagX
+    ImageIO::Ora
+    ImageIO::Xim
+    ImageIO::XRad
   DESCRIPTION
     "${DOCUMENTATION}"
   )

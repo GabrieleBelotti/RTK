@@ -24,19 +24,18 @@
 namespace rtk
 {
 
-template<typename OutputImageType>
-ConjugateGradientOperator<OutputImageType>::ConjugateGradientOperator(){}
+template <typename OutputImageType>
+ConjugateGradientOperator<OutputImageType>::ConjugateGradientOperator() = default;
 
-template< typename OutputImageType>
+template <typename OutputImageType>
 void
-ConjugateGradientOperator<OutputImageType>
-::SetX(const OutputImageType* OutputImage)
+ConjugateGradientOperator<OutputImageType>::SetX(const OutputImageType * OutputImage)
 {
-  this->SetNthInput(0, const_cast<OutputImageType*>(OutputImage));
+  this->SetNthInput(0, const_cast<OutputImageType *>(OutputImage));
 }
 
 
-}// end namespace
+} // namespace rtk
 
 
 #endif

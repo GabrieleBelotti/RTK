@@ -28,47 +28,38 @@ namespace rtk
 {
 
 template <class TInputImage, class TOutputImage>
-DrawConvexImageFilter<TInputImage, TOutputImage>
-::DrawConvexImageFilter()
+DrawConvexImageFilter<TInputImage, TOutputImage>::DrawConvexImageFilter() = default;
+
+template <class TInputImage, class TOutputImage>
+void
+DrawConvexImageFilter<TInputImage, TOutputImage>::BeforeThreadedGenerateData()
 {
+  if (this->m_ConvexShape.IsNull())
+    itkExceptionMacro(<< "ConvexShape has not been set.");
 }
 
 template <class TInputImage, class TOutputImage>
 void
-DrawConvexImageFilter<TInputImage,TOutputImage>
-::BeforeThreadedGenerateData()
-{
-  if( this->m_ConvexShape.IsNull() )
-    itkExceptionMacro(<<"ConvexShape has not been set.")
-}
-
-template <class TInputImage, class TOutputImage>
-void
-DrawConvexImageFilter<TInputImage, TOutputImage>
-#if ITK_VERSION_MAJOR<5
-::ThreadedGenerateData(const OutputImageRegionType& outputRegionForThread,
-                       ThreadIdType itkNotUsed(threadId) )
-#else
-::DynamicThreadedGenerateData(const OutputImageRegionType& outputRegionForThread)
-#endif
+DrawConvexImageFilter<TInputImage, TOutputImage>::DynamicThreadedGenerateData(
+  const OutputImageRegionType & outputRegionForThread)
 {
   typename TOutputImage::PointType point;
-  const    TInputImage * input = this->GetInput();
+  const TInputImage *              input = this->GetInput();
 
-  typename itk::ImageRegionConstIterator<TInputImage> itIn( input, outputRegionForThread);
-  typename itk::ImageRegionIterator<TOutputImage> itOut(this->GetOutput(), outputRegionForThread);
+  typename itk::ImageRegionConstIterator<TInputImage> itIn(input, outputRegionForThread);
+  typename itk::ImageRegionIterator<TOutputImage>     itOut(this->GetOutput(), outputRegionForThread);
 
-  while( !itOut.IsAtEnd() )
-    {
+  while (!itOut.IsAtEnd())
+  {
     this->GetInput()->TransformIndexToPhysicalPoint(itOut.GetIndex(), point);
     PointType p(&(point[0]));
-    if(m_ConvexShape->IsInside(p))
-      itOut.Set( itIn.Get() + m_ConvexShape->GetDensity() );
+    if (m_ConvexShape->IsInside(p))
+      itOut.Set(itIn.Get() + m_ConvexShape->GetDensity());
     else
-      itOut.Set( itIn.Get() );
+      itOut.Set(itIn.Get());
     ++itIn;
     ++itOut;
-    }
+  }
 }
 
 } // end namespace rtk

@@ -1,6 +1,6 @@
 /*=========================================================================
  *
- *  Copyright Insight Software Consortium
+ *  Copyright NumFOCUS
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -30,9 +30,9 @@ CudaMemoryProbe ::~CudaMemoryProbe() = default;
 CudaMemoryProbe::CudaMemoryLoadType
 CudaMemoryProbe ::GetInstantValue() const
 {
-  size_t free;
-  size_t total;
-  CUDA_CHECK( cudaMemGetInfo(&free, &total) );
-  return static_cast<CudaMemoryLoadType>((OffsetValueType(total) - OffsetValueType(free))/1024.);
+  size_t free = 0;
+  size_t total = 0;
+  CUDA_CHECK(cudaMemGetInfo(&free, &total));
+  return static_cast<CudaMemoryLoadType>((OffsetValueType(total) - OffsetValueType(free)) / 1024.);
 }
 } // end namespace itk

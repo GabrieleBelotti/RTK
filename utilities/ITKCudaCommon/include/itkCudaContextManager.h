@@ -1,6 +1,6 @@
 /*=========================================================================
  *
- *  Copyright Insight Software Consortium
+ *  Copyright NumFOCUS
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -37,27 +37,29 @@ namespace itk
 class ITKCudaCommon_EXPORT CudaContextManager : public LightObject
 {
 public:
+  static CudaContextManager *
+  GetInstance();
 
-  static CudaContextManager* GetInstance();
+  static void
+  DestroyInstance();
 
-  static void DestroyInstance();
+  CUcontext *
+  GetCurrentContext();
 
-  CUcontext* GetCurrentContext();
-
-  int GetCurrentDevice();
+  int
+  GetCurrentDevice();
 
 private:
-
   CudaContextManager();
-  ~CudaContextManager();
+  ~CudaContextManager() override;
 
   CUcontext m_Context;
   int       m_Device;
   int       m_DeviceIdx;
   int       m_NumberOfDevices;
 
-  static CudaContextManager* m_Instance;
-  static bool                m_Initialized;
+  static CudaContextManager * m_Instance;
+  static bool                 m_Initialized;
 };
 } // namespace itk
 

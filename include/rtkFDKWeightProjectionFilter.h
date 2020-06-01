@@ -47,9 +47,8 @@ namespace rtk
  * \ingroup RTK InPlaceImageFilter
  */
 
-template<class TInputImage, class TOutputImage=TInputImage>
-class ITK_EXPORT FDKWeightProjectionFilter :
-  public itk::InPlaceImageFilter<TInputImage, TOutputImage>
+template <class TInputImage, class TOutputImage = TInputImage>
+class ITK_EXPORT FDKWeightProjectionFilter : public itk::InPlaceImageFilter<TInputImage, TOutputImage>
 {
 public:
   ITK_DISALLOW_COPY_AND_ASSIGN(FDKWeightProjectionFilter);
@@ -76,16 +75,18 @@ public:
   itkSetObjectMacro(Geometry, ThreeDCircularProjectionGeometry);
 
 protected:
-  FDKWeightProjectionFilter()  = default;
+  FDKWeightProjectionFilter() = default;
   ~FDKWeightProjectionFilter() override = default;
 
-  void BeforeThreadedGenerateData() override;
+  /** Checks that inputs are correctly set. */
+  void
+  VerifyPreconditions() ITKv5_CONST override;
 
-#if ITK_VERSION_MAJOR<5
-  void ThreadedGenerateData(const OutputImageRegionType& outputRegionForThread, ThreadIdType threadId) override;
-#else
-  void DynamicThreadedGenerateData(const OutputImageRegionType& outputRegionForThread) override;
-#endif
+  void
+  BeforeThreadedGenerateData() override;
+
+  void
+  DynamicThreadedGenerateData(const OutputImageRegionType & outputRegionForThread) override;
 
 private:
   /** Angular weights for each projection */
@@ -101,7 +102,7 @@ private:
 } // end namespace rtk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "rtkFDKWeightProjectionFilter.hxx"
+#  include "rtkFDKWeightProjectionFilter.hxx"
 #endif
 
 #endif

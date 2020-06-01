@@ -18,8 +18,7 @@
 
 #include "rtkCudaIterativeFDKConeBeamReconstructionFilter.h"
 
-rtk::CudaIterativeFDKConeBeamReconstructionFilter
-::CudaIterativeFDKConeBeamReconstructionFilter()
+rtk::CudaIterativeFDKConeBeamReconstructionFilter ::CudaIterativeFDKConeBeamReconstructionFilter()
 {
   // Create each filter which are specific for cuda
   m_DisplacedDetectorFilter = DisplacedDetectorFilterType::New();
@@ -29,11 +28,13 @@ rtk::CudaIterativeFDKConeBeamReconstructionFilter
 
   // Filter parameters
   m_DisplacedDetectorFilter->SetPadOnTruncatedSide(false);
+
+  // Set default projector
+  this->m_CurrentForwardProjectionConfiguration = ForwardProjectionType::FP_CUDARAYCAST;
 }
 
 void
-rtk::CudaIterativeFDKConeBeamReconstructionFilter
-::GPUGenerateData()
+rtk::CudaIterativeFDKConeBeamReconstructionFilter ::GPUGenerateData()
 {
   Superclass::GenerateData();
 }

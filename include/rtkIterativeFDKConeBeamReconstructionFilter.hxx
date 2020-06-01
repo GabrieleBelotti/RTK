@@ -22,12 +22,13 @@
 #include "rtkIterativeFDKConeBeamReconstructionFilter.h"
 
 #include <algorithm>
+#include <itkIterationReporter.h>
 
 namespace rtk
 {
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
-IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::IterativeFDKConeBeamReconstructionFilter()
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
+IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::
+  IterativeFDKConeBeamReconstructionFilter()
 {
   this->SetNumberOfRequiredInputs(2);
 
@@ -56,38 +57,36 @@ IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecisio
   m_DisableDisplacedDetectorFilter = false;
 }
 
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
 void
-IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::SetForwardProjectionFilter (ForwardProjectionType _arg)
+IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::VerifyPreconditions() ITKv5_CONST
 {
-  if( _arg != this->GetForwardProjectionFilter() )
-    {
-    Superclass::SetForwardProjectionFilter( _arg );
-    m_ForwardProjectionFilter = this->InstantiateForwardProjectionFilter( _arg );
-    }
+  this->Superclass::VerifyPreconditions();
+
+  if (this->m_Geometry.IsNull())
+    itkExceptionMacro(<< "Geometry has not been set.");
 }
 
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
 void
-IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::GenerateInputRequestedRegion()
+IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::GenerateInputRequestedRegion()
 {
-  typename Superclass::InputImagePointer inputPtr =
-    const_cast< TInputImage * >( this->GetInput() );
+  typename Superclass::InputImagePointer inputPtr = const_cast<TInputImage *>(this->GetInput());
 
-  if ( !inputPtr )
+  if (!inputPtr)
     return;
 
   m_FDKFilter->GetOutput()->SetRequestedRegion(this->GetOutput()->GetRequestedRegion());
   m_FDKFilter->GetOutput()->PropagateRequestedRegion();
 }
 
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
 void
-IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::GenerateOutputInformation()
+IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::GenerateOutputInformation()
 {
+  // Set forward projection filter
+  m_ForwardProjectionFilter = this->InstantiateForwardProjectionFilter(this->m_CurrentForwardProjectionConfiguration);
+
   // Set FDK parameters
   m_FDKFilter->GetRampFilter()->SetTruncationCorrection(m_TruncationCorrection);
   m_FDKFilter->GetRampFilter()->SetHannCutFrequency(m_HannCutFrequency);
@@ -103,40 +102,38 @@ IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecisio
   Corner1[0] = this->GetInput(0)->GetOrigin()[0];
   Corner1[1] = this->GetInput(0)->GetOrigin()[1];
   Corner1[2] = this->GetInput(0)->GetOrigin()[2];
-  Corner2[0] = this->GetInput(0)->GetOrigin()[0] + this->GetInput(0)->GetLargestPossibleRegion().GetSize()[0] * this->GetInput(0)->GetSpacing()[0];
-  Corner2[1] = this->GetInput(0)->GetOrigin()[1] + this->GetInput(0)->GetLargestPossibleRegion().GetSize()[1] * this->GetInput(0)->GetSpacing()[1];
-  Corner2[2] = this->GetInput(0)->GetOrigin()[2] + this->GetInput(0)->GetLargestPossibleRegion().GetSize()[2] * this->GetInput(0)->GetSpacing()[2];
+  Corner2[0] = this->GetInput(0)->GetOrigin()[0] +
+               this->GetInput(0)->GetLargestPossibleRegion().GetSize()[0] * this->GetInput(0)->GetSpacing()[0];
+  Corner2[1] = this->GetInput(0)->GetOrigin()[1] +
+               this->GetInput(0)->GetLargestPossibleRegion().GetSize()[1] * this->GetInput(0)->GetSpacing()[1];
+  Corner2[2] = this->GetInput(0)->GetOrigin()[2] +
+               this->GetInput(0)->GetLargestPossibleRegion().GetSize()[2] * this->GetInput(0)->GetSpacing()[2];
   m_RayBoxFilter->SetBoxMin(Corner1);
   m_RayBoxFilter->SetBoxMax(Corner2);
 
-  //Initial internal connections
-  m_DisplacedDetectorFilter->SetInput( this->GetInput(1) );
+  // Initial internal connections
+  m_DisplacedDetectorFilter->SetInput(this->GetInput(1));
   m_DisplacedDetectorFilter->SetDisable(m_DisableDisplacedDetectorFilter);
 
-  m_ParkerFilter->SetInput( m_DisplacedDetectorFilter->GetOutput() );
+  m_ParkerFilter->SetInput(m_DisplacedDetectorFilter->GetOutput());
 
-  m_FDKFilter->SetInput( 0, this->GetInput(0) );
-  m_FDKFilter->SetInput( 1, m_ParkerFilter->GetOutput() );
+  m_FDKFilter->SetInput(0, this->GetInput(0));
+  m_FDKFilter->SetInput(1, m_ParkerFilter->GetOutput());
 
-  m_ForwardProjectionFilter->SetInput(0, m_ConstantProjectionStackSource->GetOutput() );
-  m_ForwardProjectionFilter->SetInput(1, m_FDKFilter->GetOutput() );
+  m_ForwardProjectionFilter->SetInput(0, m_ConstantProjectionStackSource->GetOutput());
+  m_ForwardProjectionFilter->SetInput(1, m_FDKFilter->GetOutput());
 
-  m_SubtractFilter->SetInput1( this->GetInput(1) );
-  m_SubtractFilter->SetInput2( m_ForwardProjectionFilter->GetOutput() );
+  m_SubtractFilter->SetInput1(this->GetInput(1));
+  m_SubtractFilter->SetInput2(m_ForwardProjectionFilter->GetOutput());
 
-  m_RayBoxFilter->SetInput( m_ConstantProjectionStackSource->GetOutput() );
+  m_RayBoxFilter->SetInput(m_ConstantProjectionStackSource->GetOutput());
 
-  m_MultiplyFilter->SetInput1( m_SubtractFilter->GetOutput() );
-  m_MultiplyFilter->SetConstant2( m_Lambda );
+  m_MultiplyFilter->SetInput1(m_SubtractFilter->GetOutput());
+  m_MultiplyFilter->SetConstant2(m_Lambda);
 
-  m_DivideFilter->SetInput1( m_MultiplyFilter->GetOutput() );
-  m_DivideFilter->SetInput2( m_RayBoxFilter->GetOutput() );
+  m_DivideFilter->SetInput1(m_MultiplyFilter->GetOutput());
+  m_DivideFilter->SetInput2(m_RayBoxFilter->GetOutput());
 
-  // Check and set geometry
-  if(this->GetGeometry() == nullptr)
-    {
-    itkGenericExceptionMacro(<< "The geometry of the reconstruction has not been set");
-    }
   m_DisplacedDetectorFilter->SetGeometry(m_Geometry);
   m_ParkerFilter->SetGeometry(m_Geometry);
   m_FDKFilter->SetGeometry(m_Geometry);
@@ -144,78 +141,85 @@ IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecisio
   m_RayBoxFilter->SetGeometry(m_Geometry.GetPointer());
 
   // Slightly modify the pipeline if positivity enforcement is requested
-  if(m_EnforcePositivity)
-    {
+  if (m_EnforcePositivity)
+  {
     m_ThresholdFilter->SetOutsideValue(0);
     m_ThresholdFilter->ThresholdBelow(0);
-    m_ThresholdFilter->SetInput(m_FDKFilter->GetOutput() );
-    m_ForwardProjectionFilter->SetInput(1, m_ThresholdFilter->GetOutput() );
-    }
+    m_ThresholdFilter->SetInput(m_FDKFilter->GetOutput());
+    m_ForwardProjectionFilter->SetInput(1, m_ThresholdFilter->GetOutput());
+  }
 
   // Update output information on the last filter of the pipeline
   m_DivideFilter->UpdateOutputInformation();
 
   // Copy the information from the filter that will actually return the output
-  if(m_EnforcePositivity)
-    this->GetOutput()->CopyInformation( m_ThresholdFilter->GetOutput() );
+  if (m_EnforcePositivity)
+    this->GetOutput()->CopyInformation(m_ThresholdFilter->GetOutput());
   else
-    this->GetOutput()->CopyInformation( m_FDKFilter->GetOutput() );
+    this->GetOutput()->CopyInformation(m_FDKFilter->GetOutput());
 
   // Set memory management flags
   // TODO
 }
 
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
 void
-IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::GenerateData()
+IterativeFDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::GenerateData()
 {
   // Declare the image pointers used in the main loop
   typename TInputImage::Pointer p_projs;
   typename TInputImage::Pointer p_vol;
 
+  itk::IterationReporter iterationReporter(this, 0, 1);
+
   // Run the first reconstruction
-  if(m_EnforcePositivity)
+  if (m_EnforcePositivity)
     m_ThresholdFilter->Update();
   else
     m_FDKFilter->Update();
 
+  // first iteration is performed out of the loop
+  iterationReporter.CompletedStep();
+
   // For each iteration over 1, go over each projection
-  for(unsigned int iter = 1; iter < m_NumberOfIterations; iter++)
-    {
+  for (unsigned int iter = 1; iter < m_NumberOfIterations; iter++)
+  {
     m_DivideFilter->Update();
 
     // Use previous iteration's result as input volume in next iteration
-    if(m_EnforcePositivity)
+    if (m_EnforcePositivity)
       p_vol = m_ThresholdFilter->GetOutput();
     else
       p_vol = m_FDKFilter->GetOutput();
     p_vol->DisconnectPipeline();
-    m_FDKFilter->SetInput( 0, p_vol );
+    m_FDKFilter->SetInput(0, p_vol);
 
     // Recreate broken link
-    if(m_EnforcePositivity)
-      m_ForwardProjectionFilter->SetInput(1, m_ThresholdFilter->GetOutput() );
+    if (m_EnforcePositivity)
+      m_ForwardProjectionFilter->SetInput(1, m_ThresholdFilter->GetOutput());
     else
-      m_ForwardProjectionFilter->SetInput(1, m_FDKFilter->GetOutput() );
+      m_ForwardProjectionFilter->SetInput(1, m_FDKFilter->GetOutput());
 
     // Use correction projections as input projections in next iteration
     // No broken link to re-create
     p_projs = m_DivideFilter->GetOutput();
     p_projs->DisconnectPipeline();
-    m_DisplacedDetectorFilter->SetInput( p_projs );
+    m_DisplacedDetectorFilter->SetInput(p_projs);
 
     // Run the next reconstruction
-    if(m_EnforcePositivity)
+    if (m_EnforcePositivity)
+    {
       m_ThresholdFilter->Update();
+      this->GraftOutput(m_ThresholdFilter->GetOutput());
+    }
     else
+    {
       m_FDKFilter->Update();
+      this->GraftOutput(m_FDKFilter->GetOutput());
     }
 
-  if (m_EnforcePositivity)
-    this->GraftOutput( m_ThresholdFilter->GetOutput() );
-  else
-    this->GraftOutput( m_FDKFilter->GetOutput() );
+    iterationReporter.CompletedStep();
+  }
 }
 
 } // end namespace rtk

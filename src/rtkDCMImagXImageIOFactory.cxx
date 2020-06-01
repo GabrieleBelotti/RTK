@@ -25,5 +25,25 @@ rtk::DCMImagXImageIOFactory::DCMImagXImageIOFactory()
                          "DCMImagXImageIO",
                          "ImagX Image IO for its DICOM file format",
                          true,
-                         itk::CreateObjectFunction<DCMImagXImageIO>::New() );
+                         itk::CreateObjectFunction<DCMImagXImageIO>::New());
 }
+
+// Undocumented API used to register during static initialization.
+// DO NOT CALL DIRECTLY.
+
+namespace itk
+{
+
+static bool DCMImagXImageIOFactoryHasBeenRegistered;
+
+void RTK_EXPORT
+     DCMImagXImageIOFactoryRegister__Private()
+{
+  if (!DCMImagXImageIOFactoryHasBeenRegistered)
+  {
+    DCMImagXImageIOFactoryHasBeenRegistered = true;
+    rtk::DCMImagXImageIOFactory::RegisterOneFactory();
+  }
+}
+
+} // end namespace itk

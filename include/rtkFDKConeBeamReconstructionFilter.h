@@ -59,9 +59,8 @@ namespace rtk
  *
  * \ingroup RTK ReconstructionAlgorithm
  */
-template<class TInputImage, class TOutputImage=TInputImage, class TFFTPrecision=double>
-class ITK_EXPORT FDKConeBeamReconstructionFilter :
-  public itk::InPlaceImageFilter<TInputImage, TOutputImage>
+template <class TInputImage, class TOutputImage = TInputImage, class TFFTPrecision = double>
+class ITK_EXPORT FDKConeBeamReconstructionFilter : public itk::InPlaceImageFilter<TInputImage, TOutputImage>
 {
 public:
   ITK_DISALLOW_COPY_AND_ASSIGN(FDKConeBeamReconstructionFilter);
@@ -90,14 +89,22 @@ public:
   itkTypeMacro(FDKConeBeamReconstructionFilter, itk::ImageToImageFilter);
 
   /** Get / Set the object pointer to projection geometry */
-  itkGetModifiableObjectMacro(Geometry, ThreeDCircularProjectionGeometry)
-  itkSetObjectMacro(Geometry, ThreeDCircularProjectionGeometry)
+  itkGetModifiableObjectMacro(Geometry, ThreeDCircularProjectionGeometry);
+  itkSetObjectMacro(Geometry, ThreeDCircularProjectionGeometry);
 
   /** Get pointer to the weighting filter used by the feldkamp reconstruction */
-  typename WeightFilterType::Pointer GetWeightFilter() { return m_WeightFilter; }
+  typename WeightFilterType::Pointer
+  GetWeightFilter()
+  {
+    return m_WeightFilter;
+  }
 
   /** Get pointer to the ramp filter used by the feldkamp reconstruction */
-  typename RampFilterType::Pointer GetRampFilter() { return m_RampFilter; }
+  typename RampFilterType::Pointer
+  GetRampFilter()
+  {
+    return m_RampFilter;
+  }
 
   /** Get / Set the number of cone-beam projection images processed
       simultaneously. Default is 4. */
@@ -108,25 +115,31 @@ public:
    * of initializing the mini-pipeline and the ramp filter must therefore be
    * created before calling this set function. */
   itkGetMacro(BackProjectionFilter, BackProjectionFilterPointer);
-  virtual void SetBackProjectionFilter (const BackProjectionFilterPointer _arg);
+  virtual void
+  SetBackProjectionFilter(const BackProjectionFilterPointer _arg);
 
 protected:
   FDKConeBeamReconstructionFilter();
   ~FDKConeBeamReconstructionFilter() override = default;
 
-  void GenerateInputRequestedRegion() override;
+  /** Checks that inputs are correctly set. */
+  void
+  VerifyPreconditions() ITKv5_CONST override;
 
-  void GenerateOutputInformation() override;
+  void
+  GenerateInputRequestedRegion() override;
 
-  void GenerateData() override;
+  void
+  GenerateOutputInformation() override;
+
+  void
+  GenerateData() override;
 
   /** The two inputs should not be in the same space so there is nothing
    * to verify. */
-#if ITK_VERSION_MAJOR<5
-  void VerifyInputInformation() override {}
-#else
-  void VerifyInputInformation() const override {}
-#endif
+  void
+  VerifyInputInformation() const override
+  {}
 
   /** Pointers to each subfilter of this composite filter */
   typename ExtractFilterType::Pointer m_ExtractFilter;
@@ -136,7 +149,7 @@ protected:
 
 private:
   /** Number of projections processed at a time. */
-  unsigned int m_ProjectionSubsetSize{16};
+  unsigned int m_ProjectionSubsetSize{ 16 };
 
   /** Geometry propagated to subfilters of the mini-pipeline. */
   ThreeDCircularProjectionGeometry::Pointer m_Geometry;
@@ -145,7 +158,7 @@ private:
 } // end namespace rtk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "rtkFDKConeBeamReconstructionFilter.hxx"
+#  include "rtkFDKConeBeamReconstructionFilter.hxx"
 #endif
 
 #endif

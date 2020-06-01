@@ -23,9 +23,26 @@
 //====================================================================
 rtk::OraImageIOFactory::OraImageIOFactory()
 {
-  this->RegisterOverride("itkImageIOBase",
-                         "OraImageIO",
-                         "Ora Image IO",
-                         true,
-                         itk::CreateObjectFunction<OraImageIO>::New() );
+  this->RegisterOverride(
+    "itkImageIOBase", "OraImageIO", "Ora Image IO", true, itk::CreateObjectFunction<OraImageIO>::New());
 }
+
+// Undocumented API used to register during static initialization.
+// DO NOT CALL DIRECTLY.
+
+namespace itk
+{
+
+static bool OraImageIOFactoryHasBeenRegistered;
+
+void RTK_EXPORT
+     OraImageIOFactoryRegister__Private()
+{
+  if (!OraImageIOFactoryHasBeenRegistered)
+  {
+    OraImageIOFactoryHasBeenRegistered = true;
+    rtk::OraImageIOFactory::RegisterOneFactory();
+  }
+}
+
+} // end namespace itk

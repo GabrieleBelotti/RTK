@@ -44,9 +44,8 @@ namespace rtk
  * \ingroup RTK InPlaceImageFilter
  */
 
-template<class TInputImage, class TOutputImage=TInputImage>
-class ITK_EXPORT ParkerShortScanImageFilter :
-  public itk::InPlaceImageFilter<TInputImage, TOutputImage>
+template <class TInputImage, class TOutputImage = TInputImage>
+class ITK_EXPORT ParkerShortScanImageFilter : public itk::InPlaceImageFilter<TInputImage, TOutputImage>
 {
 public:
   ITK_DISALLOW_COPY_AND_ASSIGN(ParkerShortScanImageFilter);
@@ -84,11 +83,12 @@ protected:
   ParkerShortScanImageFilter();
   ~ParkerShortScanImageFilter() override = default;
 
-#if ITK_VERSION_MAJOR<5
-  void ThreadedGenerateData(const OutputImageRegionType& outputRegionForThread, ThreadIdType threadId) override;
-#else
-  void DynamicThreadedGenerateData(const OutputImageRegionType& outputRegionForThread) override;
-#endif
+  /** Checks that inputs are correctly set. */
+  void
+  VerifyPreconditions() ITKv5_CONST override;
+
+  void
+  DynamicThreadedGenerateData(const OutputImageRegionType & outputRegionForThread) override;
 
 private:
   /** RTK geometry object */
@@ -109,7 +109,7 @@ private:
 } // end namespace rtk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "rtkParkerShortScanImageFilter.hxx"
+#  include "rtkParkerShortScanImageFilter.hxx"
 #endif
 
 #endif

@@ -46,14 +46,15 @@
 namespace rtk
 {
 
-void RegisterIOFactories()
+void
+RegisterIOFactories()
 {
   // First unregister GDCMImageIO to let ImageXDCM
-  std::list< itk::ObjectFactoryBase * > fl = itk::GDCMImageIOFactory::GetRegisteredFactories();
+  std::list<itk::ObjectFactoryBase *> fl = itk::GDCMImageIOFactory::GetRegisteredFactories();
   for (auto & factory : fl)
     if (dynamic_cast<itk::GDCMImageIOFactory *>(factory))
     {
-    itk::GDCMImageIOFactory::UnRegisterFactory(factory);
+      itk::GDCMImageIOFactory::UnRegisterFactory(factory);
     }
   rtk::HndImageIOFactory::RegisterOneFactory();
   rtk::HncImageIOFactory::RegisterOneFactory();
@@ -67,4 +68,4 @@ void RegisterIOFactories()
   itk::GDCMImageIOFactory::RegisterOneFactory();
 }
 
-} //namespace rtk
+} // namespace rtk

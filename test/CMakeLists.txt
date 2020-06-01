@@ -47,11 +47,6 @@ if(NOT ITK_SOURCE_DIR)
   set(ExternalData_LINK_CONTENT SHA512)
 endif()
 
-#-----------------------------------------------------------------------------
-# Executable to check the image quality
-add_executable(rtkcheckimagequality rtkcheckimagequality.cxx)
-target_link_libraries(rtkcheckimagequality ${ITK_LIBRARIES} ${RTK_LIBRARIES} ${RTK-Test_LIBRARIES})
-
 rtk_add_test(rtkFDKTest rtkfdktest.cxx)
 rtk_add_cuda_test(rtkFDKCudaTest rtkfdktest.cxx)
 
@@ -93,6 +88,7 @@ rtk_add_cuda_test(rtkGainCorrectionCudaTest rtkgaincorrectiontest.cxx)
 rtk_add_test(rtkForwardProjectionTest rtkforwardprojectiontest.cxx)
 rtk_add_cuda_test(rtkForwardProjectionCudaTest rtkforwardprojectiontest.cxx)
 rtk_add_test(rtkForwardAttenuatedProjectionTest rtkforwardattenuatedprojectiontest.cxx)
+rtk_add_test(rtkZengProjectionTest rtkzengforwardprojectiontest.cxx)
 
 rtk_add_test(rtkGeometryFileTest rtkgeometryfiletest.cxx)
 
@@ -130,10 +126,13 @@ rtk_add_test(rtkVarianTest rtkvariantest.cxx
   DATA{Input/Varian/acqui.xml}
   DATA{Input/Varian/Proj_00000.xim}
   DATA{Input/Varian/acqui_probeam.xml}
-  DATA{Baseline/Varian/attenuation.mha}
+  DATA{Input/Varian/image_00052.hnc}
   DATA{Baseline/Varian/geometry.xml}
+  DATA{Baseline/Varian/attenuation.mha}
   DATA{Baseline/Varian/geometryProBeam.xml}
-  DATA{Baseline/Varian/attenuationProBeam.mha})
+  DATA{Baseline/Varian/attenuationProBeam.mha}
+  DATA{Baseline/Varian/geometryHnc.xml}
+  DATA{Baseline/Varian/attenuationHnc.mha})
 
 rtk_add_test(rtkElektaTest rtkelektatest.cxx
   DATA{Input/Elekta/IMAGE.DBF}

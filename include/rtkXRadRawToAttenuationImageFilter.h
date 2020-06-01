@@ -32,9 +32,8 @@
 namespace rtk
 {
 
-template<class TInputImage, class TOutputImage=TInputImage>
-class ITK_EXPORT XRadRawToAttenuationImageFilter :
-  public itk::ImageToImageFilter<TInputImage, TOutputImage>
+template <class TInputImage, class TOutputImage = TInputImage>
+class ITK_EXPORT XRadRawToAttenuationImageFilter : public itk::ImageToImageFilter<TInputImage, TOutputImage>
 {
 public:
   ITK_DISALLOW_COPY_AND_ASSIGN(XRadRawToAttenuationImageFilter);
@@ -61,13 +60,11 @@ protected:
   XRadRawToAttenuationImageFilter();
   ~XRadRawToAttenuationImageFilter() override = default;
 
-  void BeforeThreadedGenerateData() override;
+  void
+  BeforeThreadedGenerateData() override;
 
-#if ITK_VERSION_MAJOR<5
-  void ThreadedGenerateData( const OutputImageRegionType& outputRegionForThread, ThreadIdType threadId ) override;
-#else
-  void DynamicThreadedGenerateData( const OutputImageRegionType& outputRegionForThread) override;
-#endif
+  void
+  DynamicThreadedGenerateData(const OutputImageRegionType & outputRegionForThread) override;
 
 private:
   OutputImagePointer m_DarkImage;
@@ -79,7 +76,7 @@ private:
 } // end namespace rtk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "rtkXRadRawToAttenuationImageFilter.hxx"
+#  include "rtkXRadRawToAttenuationImageFilter.hxx"
 #endif
 
 #endif

@@ -80,7 +80,8 @@ namespace rtk
  * Subtract [ label="itk::SubtractImageFilter" URL="\ref itk::SubtractImageFilter"];
  * MultiplyByLambda [ label="itk::MultiplyImageFilter (by lambda)" URL="\ref itk::MultiplyImageFilter"];
  * Divide [ label="itk::DivideOrZeroOutImageFilter" URL="\ref itk::DivideOrZeroOutImageFilter"];
- * GatingWeight [ label="itk::MultiplyImageFilter (by gating weight)" URL="\ref itk::MultiplyImageFilter", style=dashed];
+ * GatingWeight [ label="itk::MultiplyImageFilter (by gating weight)"
+ *                URL="\ref itk::MultiplyImageFilter", style=dashed];
  * Displaced [ label="rtk::DisplacedDetectorImageFilter" URL="\ref rtk::DisplacedDetectorImageFilter"];
  * ConstantProjectionStack [ label="rtk::ConstantImageSource" URL="\ref rtk::ConstantImageSource"];
  * ExtractConstantProjection [ label="itk::ExtractImageFilter" URL="\ref itk::ExtractImageFilter"];
@@ -130,9 +131,9 @@ namespace rtk
  *
  * \ingroup RTK ReconstructionAlgorithm
  */
-template<class TVolumeImage, class TProjectionImage=TVolumeImage>
-class ITK_EXPORT SARTConeBeamReconstructionFilter :
-  public rtk::IterativeConeBeamReconstructionFilter<TVolumeImage, TProjectionImage>
+template <class TVolumeImage, class TProjectionImage = TVolumeImage>
+class ITK_EXPORT SARTConeBeamReconstructionFilter
+  : public rtk::IterativeConeBeamReconstructionFilter<TVolumeImage, TProjectionImage>
 {
 public:
   ITK_DISALLOW_COPY_AND_ASSIGN(SARTConeBeamReconstructionFilter);
@@ -146,14 +147,15 @@ public:
   /** Some convenient type alias. */
   using VolumeType = TVolumeImage;
   using ProjectionType = TProjectionImage;
+  using ProjectionPixelType = typename ProjectionType::PixelType;
 
   /** Typedefs of each subfilter of this composite filter */
-  using ExtractFilterType = itk::ExtractImageFilter< ProjectionType, ProjectionType >;
-  using MultiplyFilterType = itk::MultiplyImageFilter< ProjectionType, ProjectionType, ProjectionType >;
-  using ForwardProjectionFilterType = rtk::ForwardProjectionImageFilter< ProjectionType, VolumeType >;
-  using SubtractFilterType = itk::SubtractImageFilter< ProjectionType, ProjectionType >;
-  using AddFilterType = itk::AddImageFilter< VolumeType, VolumeType >;
-  using BackProjectionFilterType = rtk::BackProjectionImageFilter< VolumeType, ProjectionType >;
+  using ExtractFilterType = itk::ExtractImageFilter<ProjectionType, ProjectionType>;
+  using MultiplyFilterType = itk::MultiplyImageFilter<ProjectionType, ProjectionType, ProjectionType>;
+  using ForwardProjectionFilterType = rtk::ForwardProjectionImageFilter<ProjectionType, VolumeType>;
+  using SubtractFilterType = itk::SubtractImageFilter<ProjectionType, ProjectionType>;
+  using AddFilterType = itk::AddImageFilter<VolumeType, VolumeType>;
+  using BackProjectionFilterType = rtk::BackProjectionImageFilter<VolumeType, ProjectionType>;
   using RayBoxIntersectionFilterType = rtk::RayBoxIntersectionImageFilter<ProjectionType, ProjectionType>;
   using DivideProjectionFilterType = itk::DivideOrZeroOutImageFilter<ProjectionType, ProjectionType, ProjectionType>;
   using DivideVolumeFilterType = itk::DivideOrZeroOutImageFilter<VolumeType, VolumeType, VolumeType>;
@@ -161,7 +163,7 @@ public:
   using ConstantProjectionSourceType = rtk::ConstantImageSource<ProjectionType>;
   using ThresholdFilterType = itk::ThresholdImageFilter<VolumeType>;
   using DisplacedDetectorFilterType = rtk::DisplacedDetectorImageFilter<ProjectionType>;
-  using GatingWeightsFilterType = itk::MultiplyImageFilter<ProjectionType,ProjectionType, ProjectionType>;
+  using GatingWeightsFilterType = itk::MultiplyImageFilter<ProjectionType, ProjectionType, ProjectionType>;
 
   using ForwardProjectionType = typename Superclass::ForwardProjectionType;
   using BackProjectionType = typename Superclass::BackProjectionType;
@@ -192,36 +194,43 @@ public:
   itkGetMacro(EnforcePositivity, bool);
   itkSetMacro(EnforcePositivity, bool);
 
-  /** Select the ForwardProjection filter */
-  void SetForwardProjectionFilter (ForwardProjectionType _arg) override;
-
-  /** Select the backprojection filter */
-  void SetBackProjectionFilter (BackProjectionType _arg) override;
-
   /** In the case of a gated SART, set the gating weights */
-  void SetGatingWeights(std::vector<float> weights);
+  void
+  SetGatingWeights(std::vector<float> weights);
 
   /** Set / Get whether the displaced detector filter should be disabled */
-  itkSetMacro(DisableDisplacedDetectorFilter, bool)
-  itkGetMacro(DisableDisplacedDetectorFilter, bool)
+  itkSetMacro(DisableDisplacedDetectorFilter, bool);
+  itkGetMacro(DisableDisplacedDetectorFilter, bool);
+
+  /** Set the threshold below which pixels in the denominator in the projection space are considered zero. The division
+   * by zero will then be evaluated at zero. Avoid noise magnification from low projections values when working with
+   * noisy and/or simulated data.
+   */
+  itkSetMacro(DivisionThreshold, ProjectionPixelType);
+  itkGetMacro(DivisionThreshold, ProjectionPixelType);
 
 protected:
   SARTConeBeamReconstructionFilter();
   ~SARTConeBeamReconstructionFilter() override = default;
 
-  void GenerateInputRequestedRegion() override;
+  /** Checks that inputs are correctly set. */
+  void
+  VerifyPreconditions() ITKv5_CONST override;
 
-  void GenerateOutputInformation() override;
+  void
+  GenerateInputRequestedRegion() override;
 
-  void GenerateData() override;
+  void
+  GenerateOutputInformation() override;
+
+  void
+  GenerateData() override;
 
   /** The two inputs should not be in the same space so there is nothing
    * to verify. */
-#if ITK_VERSION_MAJOR<5
-  void VerifyInputInformation() override {}
-#else
-  void VerifyInputInformation() const override {}
-#endif
+  void
+  VerifyInputInformation() const override
+  {}
 
   /** Pointers to each subfilter of this composite filter */
   typename ExtractFilterType::Pointer            m_ExtractFilter;
@@ -243,6 +252,8 @@ protected:
   typename DisplacedDetectorFilterType::Pointer  m_DisplacedDetectorFilter;
   typename GatingWeightsFilterType::Pointer      m_GatingWeightsFilter;
 
+  ProjectionPixelType m_DivisionThreshold;
+
   bool m_EnforcePositivity;
   bool m_DisableDisplacedDetectorFilter;
 
@@ -263,14 +274,14 @@ private:
 
   /** Have gating weights been set ? If so, apply them, otherwise ignore
    * the gating weights filter */
-  bool                m_IsGated;
-  std::vector<float>  m_GatingWeights;
+  bool               m_IsGated;
+  std::vector<float> m_GatingWeights;
 }; // end of class
 
 } // end namespace rtk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "rtkSARTConeBeamReconstructionFilter.hxx"
+#  include "rtkSARTConeBeamReconstructionFilter.hxx"
 #endif
 
 #endif

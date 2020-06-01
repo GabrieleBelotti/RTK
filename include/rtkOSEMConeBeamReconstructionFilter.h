@@ -21,6 +21,7 @@
 
 #include "rtkBackProjectionImageFilter.h"
 #include "rtkForwardProjectionImageFilter.h"
+#include "rtkDePierroRegularizationImageFilter.h"
 
 #include <itkExtractImageFilter.h>
 #include <itkMultiplyImageFilter.h>
@@ -50,6 +51,11 @@ namespace rtk
  * One weighting steps must be applied when processing a given subset:
  * - each voxel of the back projection must be divided by the value it would take if
  * a projection filled with ones was being reprojected.
+ *
+ * By default the quadratic penalization described in [De Pierro, IEEE TMI, 1995] is applied
+ * during the iterative process. The hyperparameter for the regularization can be changed
+ * using the SetBetaRegularization method. If the hyperparameter is set to 0 the
+ * filter behaves like the classic MLEM/OSEM algorithm.
  *
  * \dot
  * digraph OSEMConeBeamReconstructionFilter {
@@ -108,32 +114,33 @@ namespace rtk
  *
  * \ingroup RTK ReconstructionAlgorithm
  */
-template<class TVolumeImage, class TProjectionImage=TVolumeImage>
-class ITK_EXPORT OSEMConeBeamReconstructionFilter :
-    public rtk::IterativeConeBeamReconstructionFilter<TVolumeImage, TProjectionImage>
+template <class TVolumeImage, class TProjectionImage = TVolumeImage>
+class ITK_EXPORT OSEMConeBeamReconstructionFilter
+  : public rtk::IterativeConeBeamReconstructionFilter<TVolumeImage, TProjectionImage>
 {
 public:
   ITK_DISALLOW_COPY_AND_ASSIGN(OSEMConeBeamReconstructionFilter);
 
   /** Standard class type alias. */
-  typedef OSEMConeBeamReconstructionFilter					Self;
+  using Self = OSEMConeBeamReconstructionFilter;
   using Superclass = IterativeConeBeamReconstructionFilter<TVolumeImage, TProjectionImage>;
-  typedef itk::SmartPointer<Self>						Pointer;
-  typedef itk::SmartPointer<const Self>						ConstPointer;
+  using Pointer = itk::SmartPointer<Self>;
+  using ConstPointer = itk::SmartPointer<const Self>;
 
   /** Some convenient type alias. */
-  using VolumeType = TVolumeImage	;
+  using VolumeType = TVolumeImage;
   using ProjectionType = TProjectionImage;
 
   /** Typedefs of each subfilter of this composite filter */
-  using ExtractFilterType = itk::ExtractImageFilter< ProjectionType, ProjectionType >;
-  using MultiplyFilterType = itk::MultiplyImageFilter< VolumeType, VolumeType, VolumeType >;
-  using ForwardProjectionFilterType = rtk::ForwardProjectionImageFilter< ProjectionType, VolumeType >;
-  using BackProjectionFilterType = rtk::BackProjectionImageFilter< VolumeType, ProjectionType >;
+  using ExtractFilterType = itk::ExtractImageFilter<ProjectionType, ProjectionType>;
+  using MultiplyFilterType = itk::MultiplyImageFilter<VolumeType, VolumeType, VolumeType>;
+  using ForwardProjectionFilterType = rtk::ForwardProjectionImageFilter<ProjectionType, VolumeType>;
+  using BackProjectionFilterType = rtk::BackProjectionImageFilter<VolumeType, ProjectionType>;
   using DivideProjectionFilterType = itk::DivideOrZeroOutImageFilter<ProjectionType, ProjectionType, ProjectionType>;
   using DivideVolumeFilterType = itk::DivideOrZeroOutImageFilter<VolumeType, VolumeType, VolumeType>;
   using ConstantVolumeSourceType = rtk::ConstantImageSource<VolumeType>;
   using ConstantProjectionSourceType = rtk::ConstantImageSource<ProjectionType>;
+  using DePierroRegularizationFilterType = rtk::DePierroRegularizationImageFilter<VolumeType, VolumeType>;
 
   using ForwardProjectionType = typename Superclass::ForwardProjectionType;
   using BackProjectionType = typename Superclass::BackProjectionType;
@@ -156,57 +163,87 @@ public:
   itkGetMacro(NumberOfProjectionsPerSubset, unsigned int);
   itkSetMacro(NumberOfProjectionsPerSubset, unsigned int);
 
-  /** Select the ForwardProjection filter */
-  void SetForwardProjectionFilter (ForwardProjectionType _arg) override;
+  /** Get / Set the sigma zero of the PSF. Default is 1.5417233052142099 */
+  itkGetMacro(SigmaZero, double);
+  itkSetMacro(SigmaZero, double);
 
-  /** Select the backprojection filter */
-  void SetBackProjectionFilter (BackProjectionType _arg) override;
+  /** Get / Set the alpha of the PSF. Default is 0.016241189545787734 */
+  itkGetMacro(Alpha, double);
+  itkSetMacro(Alpha, double);
+
+  /** Get / Set the hyperparameter for the regularization. Default is 0.01 */
+  itkGetMacro(BetaRegularization, double);
+  itkSetMacro(BetaRegularization, double);
+
+  /** Get / Set StoreNormalizationImages. If true, the normalizations images
+   * are only computed once during the first iteration and stored to be reused
+   * for the next iterations. This speed up the computation time but it is
+   * more memory consuming than if the normalizations images were computed at
+   * each iteration (false). Default is true */
+  itkGetMacro(StoreNormalizationImages, bool);
+  itkSetMacro(StoreNormalizationImages, bool);
+
 protected:
   OSEMConeBeamReconstructionFilter();
   ~OSEMConeBeamReconstructionFilter() override = default;
 
-  void GenerateInputRequestedRegion() override;
+  /** Checks that inputs are correctly set. */
+  void
+  VerifyPreconditions() ITKv5_CONST override;
 
-  void GenerateOutputInformation() override;
+  void
+  GenerateInputRequestedRegion() override;
 
-  void GenerateData() override;
+  void
+  GenerateOutputInformation() override;
+
+  void
+  GenerateData() override;
 
   /** The two inputs should not be in the same space so there is nothing
    * to verify. */
-#if ITK_VERSION_MAJOR<5
-  void VerifyInputInformation() override {}
-#else
-  void VerifyInputInformation() const override {}
-#endif
+  void
+  VerifyInputInformation() const override
+  {}
 
   /** Pointers to each subfilter of this composite filter */
-  typename ExtractFilterType::Pointer            m_ExtractFilter;
-  typename ForwardProjectionFilterType::Pointer	 m_ForwardProjectionFilter;
-  typename MultiplyFilterType::Pointer           m_MultiplyFilter;
-  typename BackProjectionFilterType::Pointer     m_BackProjectionFilter;
-  typename BackProjectionFilterType::Pointer     m_BackProjectionNormalizationFilter;
-  typename DivideProjectionFilterType::Pointer	 m_DivideProjectionFilter;
-  typename DivideVolumeFilterType::Pointer       m_DivideVolumeFilter;
-  typename ConstantProjectionSourceType::Pointer m_ZeroConstantProjectionStackSource;
-  typename ConstantProjectionSourceType::Pointer m_OneConstantProjectionStackSource;
-  typename ConstantVolumeSourceType::Pointer     m_ConstantVolumeSource;
+  typename ExtractFilterType::Pointer                m_ExtractFilter;
+  typename ForwardProjectionFilterType::Pointer      m_ForwardProjectionFilter;
+  typename MultiplyFilterType::Pointer               m_MultiplyFilter;
+  typename BackProjectionFilterType::Pointer         m_BackProjectionFilter;
+  typename BackProjectionFilterType::Pointer         m_BackProjectionNormalizationFilter;
+  typename DivideProjectionFilterType::Pointer       m_DivideProjectionFilter;
+  typename DivideVolumeFilterType::Pointer           m_DivideVolumeFilter;
+  typename ConstantProjectionSourceType::Pointer     m_ZeroConstantProjectionStackSource;
+  typename ConstantProjectionSourceType::Pointer     m_OneConstantProjectionStackSource;
+  typename ConstantVolumeSourceType::Pointer         m_ConstantVolumeSource;
+  typename DePierroRegularizationFilterType::Pointer m_DePierroRegularizationFilter;
 
 private:
   /** Number of projections processed before the volume is updated (several for OS-EM) */
-  unsigned int m_NumberOfProjectionsPerSubset;
+  unsigned int m_NumberOfProjectionsPerSubset{ 1 };
 
   /** Geometry object */
   ThreeDCircularProjectionGeometry::Pointer m_Geometry;
 
   /** Number of iterations */
-  unsigned int m_NumberOfIterations;
+  unsigned int m_NumberOfIterations{ 3 };
+
+  /** PSF correction coefficients */
+  double m_SigmaZero{ -1. };
+  double m_Alpha{ -1. };
+
+  /** Hyperparameter for the regularization */
+  double m_BetaRegularization{ 0.01 };
+
+  bool m_StoreNormalizationImages{ true };
 
 }; // end of class
 
 } // end namespace rtk
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "rtkOSEMConeBeamReconstructionFilter.hxx"
+#  include "rtkOSEMConeBeamReconstructionFilter.hxx"
 #endif
 
 #endif

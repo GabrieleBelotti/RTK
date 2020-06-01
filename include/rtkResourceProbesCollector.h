@@ -24,7 +24,7 @@
 #include <itkMemoryProbe.h>
 
 #ifdef RTK_USE_CUDA
-#include <itkCudaMemoryProbe.h>
+#  include <itkCudaMemoryProbe.h>
 #endif
 
 namespace rtk
@@ -50,11 +50,11 @@ public:
   /** Start a probe with a particular name. If the time probe does not
    * exist, it will be created */
   virtual void
-  Start(const char * name);
+  Start(const char * id);
 
   /** Stop a time probe identified with a name */
   virtual void
-  Stop(const char * name);
+  Stop(const char * id);
 
   /** Report the summary of results from all probes */
   virtual void
@@ -66,12 +66,12 @@ public:
   Clear();
 
 protected:
-  TimeMapType m_TimeProbes;
+  TimeMapType   m_TimeProbes;
   MemoryMapType m_MemoryProbes;
 #ifdef RTK_USE_CUDA
   CudaMemoryMapType m_CudaMemoryProbes;
 #endif
 };
-} // end namespace itk
+} // namespace rtk
 
 #endif // rtkResourceProbesCollector_h

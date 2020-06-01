@@ -1,6 +1,6 @@
 /*=========================================================================
  *
- *  Copyright Insight Software Consortium
+ *  Copyright NumFOCUS
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
  *  you may not use this file except in compliance with the License.
@@ -23,28 +23,30 @@
 namespace itk
 {
 // static variable initialization
-CudaContextManager* CudaContextManager::m_Instance = NULL;
-bool CudaContextManager::m_Initialized = false;
+CudaContextManager * CudaContextManager::m_Instance = nullptr;
+bool                 CudaContextManager::m_Initialized = false;
 
 
-CudaContextManager* CudaContextManager::GetInstance()
+CudaContextManager *
+CudaContextManager::GetInstance()
 {
-  if (m_Instance == NULL)
-    {
+  if (m_Instance == nullptr)
+  {
     m_Instance = new CudaContextManager();
-    }
+  }
   m_Instance->Register();
   return m_Instance;
 }
 
-void CudaContextManager::DestroyInstance()
+void
+CudaContextManager::DestroyInstance()
 {
   m_Instance->UnRegister();
-  if( m_Instance->GetReferenceCount() == 1)
-    {
+  if (m_Instance->GetReferenceCount() == 1)
+  {
     m_Instance->Delete();
-    m_Instance = NULL;
-    }
+    m_Instance = nullptr;
+  }
 }
 
 CudaContextManager::CudaContextManager()
@@ -53,17 +55,17 @@ CudaContextManager::CudaContextManager()
   m_Device = 0;
 
   if (!m_Initialized)
-    {
+  {
     cuInit(0);
     m_Initialized = true;
-    }
+  }
 
   std::vector<cudaDeviceProp> devices;
   m_NumberOfDevices = itk::CudaGetAvailableDevices(devices);
 
-  if(m_NumberOfDevices)
-    {
-    CUdevice device;
+  if (m_NumberOfDevices)
+  {
+    CUdevice device = 0;
     m_DeviceIdx = itk::CudaGetMaxFlopsDev();
     CUDA_CHECK(cuDeviceGet(&device, m_DeviceIdx));
 
@@ -72,32 +74,34 @@ CudaContextManager::CudaContextManager()
     CUDA_CHECK(cuCtxSetCurrent(m_Context));
 
     m_Device = device;
-    }
+  }
   else
-    {
-    m_Context = NULL;
+  {
+    m_Context = nullptr;
     m_Device = 0;
     m_DeviceIdx = 0;
-    }
+  }
 }
 
 CudaContextManager::~CudaContextManager()
 {
-  if(m_Context)
-    {
+  if (m_Context)
+  {
     CUDA_CHECK(cuCtxDestroy(m_Context));
-    }
+  }
   cudaDeviceReset();
 }
 
-int CudaContextManager::GetCurrentDevice()
+int
+CudaContextManager::GetCurrentDevice()
 {
   int device = -1;
   CUDA_CHECK(cudaGetDevice(&device));
   return device;
 }
 
-CUcontext* CudaContextManager::GetCurrentContext()
+CUcontext *
+CudaContextManager::GetCurrentContext()
 {
   return &m_Context;
 }

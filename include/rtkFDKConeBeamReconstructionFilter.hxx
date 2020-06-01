@@ -21,12 +21,13 @@
 
 #include "rtkFDKConeBeamReconstructionFilter.h"
 
+#include <itkProgressAccumulator.h>
+
 namespace rtk
 {
 
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
-FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::FDKConeBeamReconstructionFilter()
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
+FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::FDKConeBeamReconstructionFilter()
 {
   this->SetNumberOfRequiredInputs(2);
 
@@ -34,11 +35,11 @@ FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
   m_ExtractFilter = ExtractFilterType::New();
   m_WeightFilter = WeightFilterType::New();
   m_RampFilter = RampFilterType::New();
-  this->SetBackProjectionFilter( BackProjectionFilterType::New() );
+  this->SetBackProjectionFilter(BackProjectionFilterType::New());
 
-  //Permanent internal connections
-  m_WeightFilter->SetInput( m_ExtractFilter->GetOutput() );
-  m_RampFilter->SetInput( m_WeightFilter->GetOutput() );
+  // Permanent internal connections
+  m_WeightFilter->SetInput(m_ExtractFilter->GetOutput());
+  m_RampFilter->SetInput(m_WeightFilter->GetOutput());
 
   // Default parameters
   m_ExtractFilter->SetDirectionCollapseToSubmatrix();
@@ -46,37 +47,44 @@ FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
 
   // Default to one projection per subset when FFTW is not available
 #if !defined(USE_FFTWD)
-  if( typeid(TFFTPrecision).name() == typeid(double).name() )
+  if (typeid(TFFTPrecision).name() == typeid(double).name())
     m_ProjectionSubsetSize = 2;
 #endif
 #if !defined(USE_FFTWF)
-  if( typeid(TFFTPrecision).name() == typeid(float).name() )
+  if (typeid(TFFTPrecision).name() == typeid(float).name())
     m_ProjectionSubsetSize = 2;
 #endif
 }
 
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
 void
-FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::GenerateInputRequestedRegion()
+FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::VerifyPreconditions() ITKv5_CONST
 {
-  typename Superclass::InputImagePointer inputPtr =
-    const_cast< TInputImage * >( this->GetInput() );
-  if ( !inputPtr )
+  this->Superclass::VerifyPreconditions();
+
+  if (this->m_Geometry.IsNull())
+    itkExceptionMacro(<< "Geometry has not been set.");
+}
+
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
+void
+FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::GenerateInputRequestedRegion()
+{
+  typename Superclass::InputImagePointer inputPtr = const_cast<TInputImage *>(this->GetInput());
+  if (!inputPtr)
     return;
 
-  //SR: is this useful?
-  m_BackProjectionFilter->SetInput ( 0, this->GetInput(0) );
-  m_BackProjectionFilter->SetInPlace( this->GetInPlace() );
-  m_ExtractFilter->SetInput( this->GetInput(1) );
-  m_BackProjectionFilter->GetOutput()->SetRequestedRegion(this->GetOutput()->GetRequestedRegion() );
+  // SR: is this useful?
+  m_BackProjectionFilter->SetInput(0, this->GetInput(0));
+  m_BackProjectionFilter->SetInPlace(this->GetInPlace());
+  m_ExtractFilter->SetInput(this->GetInput(1));
+  m_BackProjectionFilter->GetOutput()->SetRequestedRegion(this->GetOutput()->GetRequestedRegion());
   m_BackProjectionFilter->GetOutput()->PropagateRequestedRegion();
 }
 
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
 void
-FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::GenerateOutputInformation()
+FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::GenerateOutputInformation()
 {
   const unsigned int Dimension = this->InputImageDimension;
 
@@ -87,72 +95,80 @@ FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
   // requested in the GenerateData function
   typename ExtractFilterType::InputImageRegionType projRegion;
   projRegion = this->GetInput(1)->GetLargestPossibleRegion();
-  unsigned int firstStackSize = std::min(m_ProjectionSubsetSize, (unsigned int)projRegion.GetSize(Dimension-1) );
-  projRegion.SetSize(Dimension-1, firstStackSize);
+  unsigned int firstStackSize = std::min(m_ProjectionSubsetSize, (unsigned int)projRegion.GetSize(Dimension - 1));
+  projRegion.SetSize(Dimension - 1, firstStackSize);
   m_ExtractFilter->SetExtractionRegion(projRegion);
 
   // Run composite filter update
-  m_BackProjectionFilter->SetInput ( 0, this->GetInput(0) );
-  m_BackProjectionFilter->SetInPlace( this->GetInPlace() );
-  m_ExtractFilter->SetInput( this->GetInput(1) );
+  m_BackProjectionFilter->SetInput(0, this->GetInput(0));
+  m_BackProjectionFilter->SetInPlace(this->GetInPlace());
+  m_ExtractFilter->SetInput(this->GetInput(1));
   m_BackProjectionFilter->UpdateOutputInformation();
 
   // Update output information
-  this->GetOutput()->SetOrigin( m_BackProjectionFilter->GetOutput()->GetOrigin() );
-  this->GetOutput()->SetSpacing( m_BackProjectionFilter->GetOutput()->GetSpacing() );
-  this->GetOutput()->SetDirection( m_BackProjectionFilter->GetOutput()->GetDirection() );
-  this->GetOutput()->SetLargestPossibleRegion( m_BackProjectionFilter->GetOutput()->GetLargestPossibleRegion() );
+  this->GetOutput()->SetOrigin(m_BackProjectionFilter->GetOutput()->GetOrigin());
+  this->GetOutput()->SetSpacing(m_BackProjectionFilter->GetOutput()->GetSpacing());
+  this->GetOutput()->SetDirection(m_BackProjectionFilter->GetOutput()->GetDirection());
+  this->GetOutput()->SetLargestPossibleRegion(m_BackProjectionFilter->GetOutput()->GetLargestPossibleRegion());
 }
 
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
 void
-FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::GenerateData()
+FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::GenerateData()
 {
   const unsigned int Dimension = this->InputImageDimension;
 
   // The backprojection works on a small stack of projections, not the full stack
   typename ExtractFilterType::InputImageRegionType subsetRegion;
   subsetRegion = this->GetInput(1)->GetLargestPossibleRegion();
-  unsigned int nProj = subsetRegion.GetSize( Dimension-1 );
+  unsigned int nProj = subsetRegion.GetSize(Dimension - 1);
 
-  for(unsigned int i=0; i<nProj; i+=m_ProjectionSubsetSize)
-    {
+  // The progress accumulator tracks the progress of the pipeline
+  // Each filter is equally weighted across all iterations of the stack
+  itk::ProgressAccumulator::Pointer progress = itk::ProgressAccumulator::New();
+  progress->SetMiniPipelineFilter(this);
+  auto frac = (1.0f / 3) / itk::Math::ceil(double(nProj) / m_ProjectionSubsetSize);
+  progress->RegisterInternalFilter(m_WeightFilter, frac);
+  progress->RegisterInternalFilter(m_RampFilter, frac);
+  progress->RegisterInternalFilter(m_BackProjectionFilter, frac);
+
+  for (unsigned int i = 0; i < nProj; i += m_ProjectionSubsetSize)
+  {
     // After the first bp update, we need to use its output as input.
-    if(i)
-      {
+    if (i)
+    {
       typename TInputImage::Pointer pimg = m_BackProjectionFilter->GetOutput();
       pimg->DisconnectPipeline();
-      m_BackProjectionFilter->SetInput( pimg );
+      m_BackProjectionFilter->SetInput(pimg);
 
       // Change projection subset
-      subsetRegion.SetIndex( Dimension-1, i );
-      subsetRegion.SetSize( Dimension-1, std::min(m_ProjectionSubsetSize, nProj-i) );
+      subsetRegion.SetIndex(Dimension - 1, i);
+      subsetRegion.SetSize(Dimension - 1, std::min(m_ProjectionSubsetSize, nProj - i));
       m_ExtractFilter->SetExtractionRegion(subsetRegion);
 
       // This is required to reset the full pipeline
       m_BackProjectionFilter->GetOutput()->UpdateOutputInformation();
       m_BackProjectionFilter->GetOutput()->PropagateRequestedRegion();
-      }
-    m_BackProjectionFilter->Update();
     }
+    m_BackProjectionFilter->Update();
+  }
 
-  this->GraftOutput( m_BackProjectionFilter->GetOutput() );
+  this->GraftOutput(m_BackProjectionFilter->GetOutput());
   this->GenerateOutputInformation();
 }
 
-template<class TInputImage, class TOutputImage, class TFFTPrecision>
+template <class TInputImage, class TOutputImage, class TFFTPrecision>
 void
-FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>
-::SetBackProjectionFilter (const BackProjectionFilterPointer _arg)
+FDKConeBeamReconstructionFilter<TInputImage, TOutputImage, TFFTPrecision>::SetBackProjectionFilter(
+  const BackProjectionFilterPointer _arg)
 {
   itkDebugMacro("setting BackProjectionFilter to " << _arg);
   if (this->m_BackProjectionFilter != _arg)
-    {
+  {
     this->m_BackProjectionFilter = _arg;
-    m_BackProjectionFilter->SetInput( 1, m_RampFilter->GetOutput() );
+    m_BackProjectionFilter->SetInput(1, m_RampFilter->GetOutput());
     this->Modified();
-    }
+  }
 }
 
 } // end namespace rtk

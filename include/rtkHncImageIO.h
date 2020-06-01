@@ -16,123 +16,145 @@
  *
  *=========================================================================*/
 
-#ifndef __rtkHncImageIO_h
-#define __rtkHncImageIO_h
+#ifndef rtkHncImageIO_h
+#define rtkHncImageIO_h
 
 // itk include
-#include "itkImageIOBase.h"
+#include <itkImageIOBase.h>
 #include "itksys/SystemTools.hxx"
 
-#include <fstream>
+#if defined(_MSC_VER) && (_MSC_VER < 1600)
+// SR: taken from
+//#include "msinttypes/stdint.h"
+#else
+#  include <cstdint>
+#endif
 
-namespace rtk {
+#include "rtkMacro.h"
+
+namespace rtk
+{
 
 /** \class HncImageIO
  *
  * Reads Hnc files (file format used by Varian for Obi raw data).
  *
- * \author Geoff Hugo, VCU
- * 
- * \ingroup IOFilters
+ * \author Simon Rit
+ *
+ * \ingroup RTK IOFilters
  */
 class HncImageIO : public itk::ImageIOBase
 {
 public:
-/** Standard class typedefs. */
-  typedef HncImageIO              Self;
-  typedef itk::ImageIOBase        Superclass;
-  typedef itk::SmartPointer<Self> Pointer;
-  typedef unsigned short int      PixelType;
+  /** Standard class type alias. */
+  using Self = HncImageIO;
+  using Superclass = itk::ImageIOBase;
+  using Pointer = itk::SmartPointer<Self>;
+  using PixelType = unsigned short int;
 
-  typedef struct hnc_header {
-    char sFileType[32];
-    uint32_t FileLength;
-    char sChecksumSpec[4];
-    uint32_t nCheckSum;
-    char sCreationDate[8];
-    char sCreationTime[8];
-    char sPatientID[16];
-    uint32_t nPatientSer;
-    char sSeriesID[16];
-    uint32_t nSeriesSer;
-    char sSliceID[16];
-    uint32_t nSliceSer;
-    uint32_t SizeX;
-    uint32_t SizeY;
-    double dSliceZPos;
-    char sModality[16];
-    uint32_t nWindow;
-    uint32_t nLevel;
-    uint32_t nPixelOffset;
-    char sImageType[4];
-    double dGantryRtn;
-    double dSAD;
-    double dSFD;
-    double dCollX1;
-    double dCollX2;
-    double dCollY1;
-    double dCollY2;
-    double dCollRtn;
-    double dFieldX;
-    double dFieldY;
-    double dBladeX1;
-    double dBladeX2;
-    double dBladeY1;
-    double dBladeY2;
-    double dIDUPosLng;
-    double dIDUPosLat;
-    double dIDUPosVrt;
-    double dIDUPosRtn;
-    double dPatientSupportAngle;
-    double dTableTopEccentricAngle;
-    double dCouchVrt;
-    double dCouchLng;
-    double dCouchLat;
-    double dIDUResolutionX;
-    double dIDUResolutionY;
-    double dImageResolutionX;
-    double dImageResolutionY;
-    double dEnergy;
-    double dDoseRate;
-    double dXRayKV;
-    double dXRayMA;
-    double dMetersetExposure;
-    double dAcqAdjustment;
-    double dCTProjectionAngle;
-    double dCTNormChamber;
-    double dGatingTimeTag;
-    double dGating4DInfoX;
-    double dGating4DInfoY;
-    double dGating4DInfoZ;
-    double dGating4DInfoTime;
-    } Hnc_header;
+  typedef struct hnc_header
+  {
+    char         sFileType[32];
+    unsigned int FileLength;
+    char         sChecksumSpec[4];
+    unsigned int nCheckSum;
+    char         sCreationDate[8];
+    char         sCreationTime[8];
+    char         sPatientID[16];
+    unsigned int nPatientSer;
+    char         sSeriesID[16];
+    unsigned int nSeriesSer;
+    char         sSliceID[16];
+    unsigned int nSliceSer;
+    unsigned int SizeX;
+    unsigned int SizeY;
+    double       dSliceZPos;
+    char         sModality[16];
+    unsigned int nWindow;
+    unsigned int nLevel;
+    unsigned int nPixelOffset;
+    char         sImageType[4];
+    double       dGantryRtn;
+    double       dSAD;
+    double       dSFD;
+    double       dCollX1;
+    double       dCollX2;
+    double       dCollY1;
+    double       dCollY2;
+    double       dCollRtn;
+    double       dFieldX;
+    double       dFieldY;
+    double       dBladeX1;
+    double       dBladeX2;
+    double       dBladeY1;
+    double       dBladeY2;
+    double       dIDUPosLng;
+    double       dIDUPosLat;
+    double       dIDUPosVrt;
+    double       dIDUPosRtn;
+    double       dPatientSupportAngle;
+    double       dTableTopEccentricAngle;
+    double       dCouchVrt;
+    double       dCouchLng;
+    double       dCouchLat;
+    double       dIDUResolutionX;
+    double       dIDUResolutionY;
+    double       dImageResolutionX;
+    double       dImageResolutionY;
+    double       dEnergy;
+    double       dDoseRate;
+    double       dXRayKV;
+    double       dXRayMA;
+    double       dMetersetExposure;
+    double       dAcqAdjustment;
+    double       dCTProjectionAngle;
+    double       dCTNormChamber;
+    double       dGatingTimeTag;
+    double       dGating4DInfoX;
+    double       dGating4DInfoY;
+    double       dGating4DInfoZ;
+    double       dGating4DInfoTime;
+  } Hnc_header;
 
-  HncImageIO() : Superclass() {}
+  HncImageIO()
+    : Superclass()
+  {}
 
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(HncImageIO, ImageIOBase);
-  
+  itkTypeMacro(HncImageIO, itk::ImageIOBase);
+
   /*-------- This part of the interface deals with reading data. ------ */
-  virtual void ReadImageInformation();
+  void
+  ReadImageInformation() override;
 
-  virtual bool CanReadFile( const char* FileNameToRead );
+  bool
+  CanReadFile(const char * FileNameToRead) override;
 
-  virtual void Read(void * buffer);
+  void
+  Read(void * buffer) override;
 
   /*-------- This part of the interfaces deals with writing data. ----- */
-  virtual void WriteImageInformation(bool keepOfStream) { }
+  virtual void
+  WriteImageInformation(bool /*keepOfStream*/)
+  {}
 
-  virtual void WriteImageInformation() { WriteImageInformation(false); }
+  void
+  WriteImageInformation() override
+  {
+    WriteImageInformation(false);
+  }
 
-  virtual bool CanWriteFile(const char* filename);
+  bool
+  CanWriteFile(const char * filename) override;
 
-  virtual void Write(const void* buffer);
+  void
+  Write(const void * buffer) override;
 
 }; // end class HncImageIO
 
-} // end namespace
+} // namespace rtk
 
-#endif /* end #define __rtkHncImageIO_h  */
+#endif /* end #define rtkHncImageIO_h */

@@ -30,35 +30,33 @@
 namespace rtk
 {
 
-template <class TInputImage, class  TOutputImage>
+template <class TInputImage, class TOutputImage>
 void
-ForwardProjectionImageFilter<TInputImage,TOutputImage>
-::GenerateInputRequestedRegion()
+ForwardProjectionImageFilter<TInputImage, TOutputImage>::VerifyPreconditions() ITKv5_CONST
+{
+  this->Superclass::VerifyPreconditions();
+
+  if (this->m_Geometry.IsNull())
+    itkExceptionMacro(<< "Geometry has not been set.");
+}
+
+template <class TInputImage, class TOutputImage>
+void
+ForwardProjectionImageFilter<TInputImage, TOutputImage>::GenerateInputRequestedRegion()
 {
   // Input 0 is the stack of projections in which we project
-  typename Superclass::InputImagePointer inputPtr0 =
-    const_cast< TInputImage * >( this->GetInput(0) );
-  if ( !inputPtr0 )
+  typename Superclass::InputImagePointer inputPtr0 = const_cast<TInputImage *>(this->GetInput(0));
+  if (!inputPtr0)
     return;
-  inputPtr0->SetRequestedRegion( this->GetOutput()->GetRequestedRegion() );
+  inputPtr0->SetRequestedRegion(this->GetOutput()->GetRequestedRegion());
 
   // Input 1 is the volume to forward project
-  typename Superclass::InputImagePointer  inputPtr1 =
-    const_cast< TInputImage * >( this->GetInput(1) );
-  if ( !inputPtr1 )
+  typename Superclass::InputImagePointer inputPtr1 = const_cast<TInputImage *>(this->GetInput(1));
+  if (!inputPtr1)
     return;
 
   typename TInputImage::RegionType reqRegion = inputPtr1->GetLargestPossibleRegion();
-  inputPtr1->SetRequestedRegion( reqRegion );
-
-  // Input 2 is the attenuation map relative to the volume
-  typename Superclass::InputImagePointer  inputPtr2 =
-    const_cast< TInputImage * >( this->GetInput(2) );
-  if ( !inputPtr2 )
-    return;
-
-  typename TInputImage::RegionType reqRegion2 = inputPtr2->GetLargestPossibleRegion();
-  inputPtr2->SetRequestedRegion( reqRegion2 );
+  inputPtr1->SetRequestedRegion(reqRegion);
 }
 
 } // end namespace rtk
