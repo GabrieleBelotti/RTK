@@ -118,7 +118,7 @@ DisplacedDetectorImageFilter<TInputImage, TOutputImage>::GenerateOutputInformati
     m_InferiorCorner += inputPtr->GetSpacing()[0] * (outputLargestPossibleRegion.GetSize(0));
   else
     m_SuperiorCorner += inputPtr->GetSpacing()[0] * (outputLargestPossibleRegion.GetSize(0));
-
+  
   if (!m_OffsetsSet)
   {
     // Account for projections offsets
