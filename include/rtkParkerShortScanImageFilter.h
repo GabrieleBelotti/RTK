@@ -29,12 +29,10 @@ namespace rtk
 
 /** \class ParkerShortScanImageFilter
  *
- * Weighting of image projections to handle off-centered panels
- * in tomography reconstruction. Based on [Wang, Med Phys, 2002].
- *
- * Note that the filter does nothing if the panel shift is less than 10%
- * of its size. Otherwise, it does the weighting described in the publication
- * and zero pads the data on the nearest side to the center.
+ * Weighting of image projections to handle short-scans
+ * in tomography reconstruction. Based on [Wesarg, Med Phys, 2002],
+ * which expands on [Parker, Med Phys, 1982].
+ * 
  *
  * \test rtkshortscantest.cxx, rtkshortscancompcudatest.cxx
  *
